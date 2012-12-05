@@ -19,12 +19,7 @@ import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.Statement;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -602,9 +597,14 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
                 robolectricConfig.validate();
 
                 String rClassName = robolectricConfig.getRClassName();
-                Class rClass = Class.forName(rClassName);
-                resourceLoader = new ResourceLoader(robolectricConfig.getRealSdkVersion(), rClass, robolectricConfig.getResourceDirectory(), robolectricConfig.getAssetsDirectory() );
-                resourceLoaderForRootAndDirectory.put(robolectricConfig, resourceLoader);
+                Class<?> rClass = Class.forName(rClassName);
+                resourceLoader = new ResourceLoader(robolectricConfig.getRealSdkVersion(), rClass,
+                        robolectricConfig.getResourceDirectory(),
+                        robolectricConfig.getAssetsDirectory(),
+                        robolectricConfig.getLibraryResourceDirectories(),
+                        robolectricConfig.getLibraryAssetDirectories(),
+                        robolectricConfig.getLibraryRClasses());
+         resourceLoaderForRootAndDirectory.put(robolectricConfig, resourceLoader);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -619,15 +619,7 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
         return resourceLoader;
     }
 
-    private String findResourcePackageName(final File projectManifestFile) throws ParserConfigurationException, IOException, SAXException {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        DocumentBuilder db = dbf.newDocumentBuilder();
-        Document doc = db.parse(projectManifestFile);
-
-        String projectPackage = doc.getElementsByTagName("manifest").item(0).getAttributes().getNamedItem("package").getTextContent();
-
-        return projectPackage + ".R";
-    }
+   
 
     /*
      * Specifies what database to use for testing (ex: H2 or Sqlite),

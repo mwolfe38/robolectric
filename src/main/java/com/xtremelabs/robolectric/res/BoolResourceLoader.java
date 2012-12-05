@@ -18,7 +18,7 @@ public class BoolResourceLoader extends XTagXmlResourceLoader
 	
 	public boolean getValue(int resourceId) {
         final String resourceIdDebugString = String.valueOf(resourceId) + " (" + "0x" + Integer.toHexString(resourceId) + ")";
-		String resourceName = resourceExtractor.getResourceName(resourceId);
+		String resourceName = resourceExtractor.getResourceName(resourceId, ResourceSection.BOOL);
         if (resourceName == null) {
             throw new IllegalArgumentException("No such resource: " + resourceId);
         }

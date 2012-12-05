@@ -79,7 +79,7 @@ public class XmlFileLoader extends XmlLoader {
 
  
 	public XmlResourceParser getXml(int resourceId) {
-		return getXml(resourceExtractor.getResourceName(resourceId));		
+		return getXml(resourceExtractor.getResourceName(resourceId, ResourceSection.XML));		
 	}
 	
 	public XmlResourceParser getXml(String key) {

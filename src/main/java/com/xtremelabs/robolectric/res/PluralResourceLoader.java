@@ -22,7 +22,7 @@ public class PluralResourceLoader extends XpathResourceXmlLoader implements Reso
     }
 
     public String getValue(int resourceId, int quantity) {
-        String name = resourceExtractor.getResourceName(resourceId);
+        String name = resourceExtractor.getResourceName(resourceId, ResourceSection.PLURALS);
         PluralRules rules = plurals.get(name);
         if (rules != null) {
             Plural p = rules.find(quantity);

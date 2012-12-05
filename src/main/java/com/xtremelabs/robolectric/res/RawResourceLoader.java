@@ -16,7 +16,7 @@ public class RawResourceLoader {
     }
 
     public InputStream getValue(int resourceId) {
-        String resourceFileName = resourceExtractor.getResourceName(resourceId);
+        String resourceFileName = resourceExtractor.getResourceName(resourceId, ResourceSection.RAW);
         String resourceName = resourceFileName.substring("/raw".length());
 
         File rawResourceDir = new File(resourceDir, "raw");

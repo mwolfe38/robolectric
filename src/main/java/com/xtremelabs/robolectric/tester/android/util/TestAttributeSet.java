@@ -4,6 +4,7 @@ import android.util.AttributeSet;
 import android.view.View;
 import com.xtremelabs.robolectric.res.AttrResourceLoader;
 import com.xtremelabs.robolectric.res.ResourceExtractor;
+import com.xtremelabs.robolectric.res.ResourceSection;
 import com.xtremelabs.robolectric.util.I18nException;
 
 import java.util.HashMap;
@@ -91,7 +92,7 @@ public class TestAttributeSet implements AttributeSet {
 
     @Override
     public String getAttributeValue(int resourceId) {
-        String qualifiedResourceName = resourceExtractor.getResourceName(resourceId);
+        String qualifiedResourceName = resourceExtractor.getResourceName(resourceId, ResourceSection.ID);
         if (qualifiedResourceName != null) {
             String resourceName = qualifiedResourceName.substring(qualifiedResourceName.indexOf('/') + 1);
             return getAttributeValueInMap(null, resourceName);

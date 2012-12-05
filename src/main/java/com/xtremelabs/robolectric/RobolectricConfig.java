@@ -1,7 +1,5 @@
 package com.xtremelabs.robolectric;
 
-import android.app.Application;
-import com.xtremelabs.robolectric.internal.ClassNameResolver;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -9,9 +7,12 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import static android.content.pm.ApplicationInfo.*;
 import static com.xtremelabs.robolectric.Robolectric.DEFAULT_SDK_VERSION;
@@ -20,6 +21,11 @@ public class RobolectricConfig {
     private final File androidManifestFile;
     private final File resourceDirectory;
     private final File assetsDirectory;
+    private final List<File> libraryProjectDirectories;
+    private final File[] libraryResourceDirectories;
+    private final File[] libraryAssetDirectories;
+    private final Class<?>[] libraryRClasses;
+    
     private String rClassName;
     private String packageName;
     private String processName;
@@ -61,6 +67,67 @@ public class RobolectricConfig {
         this.androidManifestFile = androidManifestFile;
         this.resourceDirectory = resourceDirectory;
         this.assetsDirectory = assetsDirectory;
+        
+        libraryProjectDirectories = findLibraryProjects(androidManifestFile.getParentFile());
+        libraryAssetDirectories = new File[libraryProjectDirectories.size()];
+        libraryResourceDirectories = new File[libraryProjectDirectories.size()];
+        libraryRClasses = new Class[libraryProjectDirectories.size()];
+        for(int i=0; i<libraryProjectDirectories.size(); i++) {
+            libraryAssetDirectories[i] = new File(libraryProjectDirectories.get(i), "assets");
+            libraryResourceDirectories[i] = new File(libraryProjectDirectories.get(i), "res");
+            String libPackageName = getPackageNameFromManifest(new File(libraryProjectDirectories.get(i), "AndroidManifest.xml"));
+            try {
+                Class<?> klass = Class.forName(libPackageName + ".R");
+                libraryRClasses[i] = klass;
+            } catch (ClassNotFoundException ignored) {
+                libraryRClasses[i] = null;
+            }
+        } 
+    }
+
+    //find library projects using breadth first search
+    private List<File> findLibraryProjects(File appPath) {
+        List<File> queue = new ArrayList<File>();
+        List<File> libProjects = new ArrayList<File>();
+        try {
+            queue.add(appPath.getCanonicalFile());
+        } catch(IOException ex) {
+            throw new RuntimeException("Failed to add library projects", ex);
+        }
+        while(queue.size() > 0) {
+            File curr = queue.remove(0);
+            File projectPropertiesFile = new File(curr, "project.properties");
+            if (projectPropertiesFile.exists()) {
+                try {
+                    Properties prop = new Properties();
+                    FileInputStream in = new FileInputStream(projectPropertiesFile);
+                    prop.load(in);
+                    int i = 1;
+                    boolean found = true;
+                    do {
+                        String key = "android.library.reference." + i++;
+                        found = prop.containsKey(key);
+                        if (found) {
+                            File libPath = new File(curr, prop.getProperty(key)).getCanonicalFile();
+                            File libFileResDir = new File(libPath, "res");
+                            //only interested in library projects with resources
+                            if (libFileResDir.exists()) {
+                                if (!queue.contains(libPath)) {
+                                    queue.add(libPath);
+                                }
+                                if (!libProjects.contains(libPath)) {
+                                    libProjects.add(libPath);
+                                }
+                            }
+                        }
+                    } while(found);
+                    
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+        return libProjects;
     }
 
     public String getRClassName() throws Exception {
@@ -76,8 +143,30 @@ public class RobolectricConfig {
         if (!getResourceDirectory().exists() || !getResourceDirectory().isDirectory()) {
             throw new FileNotFoundException(getResourceDirectory().getAbsolutePath() + " not found or not a directory; it should point to your project's res directory");
         }
+        
+        for (File f : libraryProjectDirectories) {
+            if (!f.exists() || !f.isDirectory()) {
+                throw new FileNotFoundException("Library project path: " + f.getAbsolutePath() + " not found or not a directory.");
+            }
+        }
+        
     }
 
+    private String getPackageNameFromManifest(File manifestXml) {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        String className = null;
+        try {
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document manifestDocument = db.parse(manifestXml);
+            className = getPackageNameFromManifest(manifestDocument);
+        } catch(Exception ignored) {}
+        return className;
+    }
+    
+    private String getPackageNameFromManifest(Document doc) {
+        return getTagAttributeText(doc,  "manifest",  "package");
+    }
+    
     private void parseAndroidManifest() {
         if (manifestIsParsed) {
             return;
@@ -86,8 +175,7 @@ public class RobolectricConfig {
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
             Document manifestDocument = db.parse(androidManifestFile);
-
-            packageName = getTagAttributeText(manifestDocument, "manifest", "package");
+            packageName = getPackageNameFromManifest(manifestDocument);
             rClassName = packageName + ".R";
             applicationName = getTagAttributeText(manifestDocument, "application", "android:name");
             Integer minSdkVer = getTagAttributeIntValue(manifestDocument, "uses-sdk", "android:minSdkVersion");
@@ -109,7 +197,6 @@ public class RobolectricConfig {
             if (processName == null) {
             	processName = packageName;
             }
-
             parseApplicationFlags(manifestDocument);
             parseReceivers(manifestDocument, packageName);
         } catch (Exception ignored) {
@@ -243,6 +330,22 @@ public class RobolectricConfig {
         return receivers.get(receiverIndex).getIntentFilterActions();
     }
 
+    public File[] getLibraryProjectDirectories() {
+        return libraryProjectDirectories.toArray(new File[]{});
+    }
+    
+    public File[] getLibraryResourceDirectories() {
+        return libraryResourceDirectories;
+    }
+    
+    public File[] getLibraryAssetDirectories() {
+        return libraryAssetDirectories;
+    }
+    
+    public Class<?>[] getLibraryRClasses() {
+        return libraryRClasses;
+    }
+    
     public boolean getStrictI18n() {
     	return strictI18n;
     }
@@ -274,18 +377,6 @@ public class RobolectricConfig {
             }
         }
         return null;
-    }
-    
-    private static Application newApplicationInstance(final String packageName, final String applicationName) {
-        Application application;
-        try {
-            Class<? extends Application> applicationClass =
-                    new ClassNameResolver<Application>(packageName, applicationName).resolve();
-            application = applicationClass.newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return application;
     }
 
     @Override

@@ -23,7 +23,7 @@ public class IntegerArrayResourceLoader extends XpathResourceXmlLoader {
     }
 
     public int[] getArrayValue(int resourceId) {
-        String resourceName = resourceExtractor.getResourceName(resourceId);
+        String resourceName = resourceExtractor.getResourceName(resourceId, ResourceSection.ARRAY);
         Integer[] values = integerArrayValues.get(resourceName);
         int[] results = new int[values.length];
         for (int i = 0; i < values.length; i++) {

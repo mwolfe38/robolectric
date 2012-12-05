@@ -99,7 +99,7 @@ public class MenuLoader extends XmlLoader {
     }
 
     public void inflateMenu(Context context, int resourceId, Menu root) {
-        inflateMenu(context, resourceExtractor.getResourceName(resourceId),
+        inflateMenu(context, resourceExtractor.getResourceName(resourceId, ResourceSection.MENU),
                 root);
     }
 

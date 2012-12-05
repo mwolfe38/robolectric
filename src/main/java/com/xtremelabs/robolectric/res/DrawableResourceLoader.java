@@ -59,7 +59,7 @@ public class DrawableResourceLoader extends XmlLoader {
      * @return Boolean
      */
     public boolean isXml(int resourceId) {
-        return documents.containsKey(resourceExtractor.getResourceName(resourceId));
+        return documents.containsKey(resourceExtractor.getResourceName(resourceId, ResourceSection.DRAWABLE));
     }
 
     public Drawable getXmlDrawable(int resId) {
@@ -68,7 +68,7 @@ public class DrawableResourceLoader extends XmlLoader {
             return null;
         }
 
-        Document xmlDoc = documents.get(resourceExtractor.getResourceName(resId));
+        Document xmlDoc = documents.get(resourceExtractor.getResourceName(resId, ResourceSection.DRAWABLE));
         NodeList nodes = xmlDoc.getElementsByTagName("selector");
         if (nodes != null && nodes.getLength() > 0) {
             return buildStateListDrawable(xmlDoc);
@@ -131,7 +131,7 @@ public class DrawableResourceLoader extends XmlLoader {
      * @return Drawables
      */
     protected int[] getDrawableIds(int resourceId) {
-        String resourceName = resourceExtractor.getResourceName(resourceId);
+        String resourceName = resourceExtractor.getResourceName(resourceId, ResourceSection.DRAWABLE);
         Document document = documents.get(resourceName);
 
         NodeList items = document.getElementsByTagName("item");
@@ -153,7 +153,7 @@ public class DrawableResourceLoader extends XmlLoader {
     }
 
     public boolean isAnimationDrawable(int resourceId) {
-        Document document = documents.get(resourceExtractor.getResourceName(resourceId));
+        Document document = documents.get(resourceExtractor.getResourceName(resourceId, ResourceSection.DRAWABLE));
         return "animation-list".equals(document.getDocumentElement().getLocalName());
     }
 

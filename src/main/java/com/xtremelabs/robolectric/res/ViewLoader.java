@@ -83,7 +83,7 @@ public class ViewLoader extends XmlLoader {
     }
 
     public View inflateView(Context context, int resourceId, View parent) {
-        return inflateView(context, resourceExtractor.getResourceName(resourceId), parent);
+        return inflateView(context, resourceExtractor.getResourceName(resourceId, ResourceSection.LAYOUT), parent);
     }
 
     private View inflateView(Context context, String layoutName, Map<String, String> attributes, View parent) {
