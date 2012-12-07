@@ -18,6 +18,7 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultRequestDirector;
 import org.apache.http.message.BasicHeader;
+import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
@@ -343,7 +344,12 @@ public class DefaultRequestDirectorTest {
     @Test(expected = IOException.class)
     public void shouldSupportRealHttpRequests() throws Exception {
         Robolectric.getFakeHttpLayer().interceptHttpRequests(false);
-        DefaultHttpClient client = new DefaultHttpClient();
+        HttpParams httpParameters = new BasicHttpParams();
+        int timeout = 2000;
+        HttpConnectionParams.setConnectionTimeout(httpParameters, timeout);
+        HttpConnectionParams.setSoTimeout(httpParameters, timeout);
+        DefaultHttpClient client = new DefaultHttpClient(httpParameters);
+
         client.execute(new HttpGet("http://www.this-host-should-not-exist-123456790.org:999"));
     }
 
