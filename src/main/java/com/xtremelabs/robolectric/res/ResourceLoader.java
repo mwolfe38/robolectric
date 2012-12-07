@@ -160,7 +160,6 @@ public class ResourceLoader {
                 
                 for (int i=0; i<libraryValueResourceDirs.length; i++) {
                     File resDir = this.libResourceDirs[i];
-        
                     File valueResourceDir = getValueResourceDir(resDir, qualifiers,  true);
                     File preferenceDir = getPreferenceResourceDir(resDir);
                     loadStringResources( valueResourceDir, null );
@@ -176,7 +175,7 @@ public class ResourceLoader {
                 }
                 
                 File systemResourceDir = getSystemResourceDir( getPathToAndroidResources() );
-                File localValueResourceDir = getValueResourceDir( resourceDir, null, true );
+                File localValueResourceDir = getValueResourceDir( resourceDir, qualifiers, true );
                 File systemValueResourceDir = getValueResourceDir( systemResourceDir, null, false );
                 File preferenceDir = getPreferenceResourceDir( resourceDir );
 
