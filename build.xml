@@ -60,29 +60,31 @@
         <exec executable="./find-android.sh"/>
     </target>
     
-    <target name="findAndroid" unless="sdkDirSet" depends="findAndroidWindows, findAndroidUnix">
-		<fail message="Build failed because the sdk.dir was not. We generated one with this build script though so try your build again." />
+    <target name="findAndroid" depends="findAndroidWindows, findAndroidUnix">
+    	<loadproperties srcFile="local.properties" />
+    	<echo message="sdk.dir is ${sdk.dir}" />
+    	<path id="android.antlibs">
+       		<pathelement path="${sdk.dir}/tools/lib/anttasks.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/sdklib.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/androidprefs.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/apkbuilder.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/jarutils.jar"/>
+    	</path>
+
+    	<path id="android.target.classpath">
+        	<pathelement path="${sdk.dir}/platforms/android-${default.sdk.version}/android.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon-google_apis-google_inc_-${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon-google_apis-google-${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/extras/android/support/v4/android-support-v4.jar"/>
+        	<pathelement path="${sdk.dir}/android-compatibility/v4/android-support-v4.jar"/>
+    	</path>
     </target>
 
     
     <!-- Custom Android task to deal with the project target, and import the proper rules.
          This requires ant 1.6.0 or above. -->
-    <path id="android.antlibs">
-        <pathelement path="${sdk.dir}/tools/lib/anttasks.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/sdklib.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/androidprefs.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/apkbuilder.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/jarutils.jar"/>
-    </path>
-
-    <path id="android.target.classpath">
-        <pathelement path="${sdk.dir}/platforms/android-${default.sdk.version}/android.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon-google_apis-google_inc_-${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon-google_apis-google-${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/extras/android/support/v4/android-support-v4.jar"/>
-        <pathelement path="${sdk.dir}/android-compatibility/v4/android-support-v4.jar"/>
-    </path>
+    
 
     <property name="main.absolute.dir" location="${main.dir}"/>
     <property name="out.main.dir" value="${out.absolute.dir}/mainClasses"/>
@@ -238,7 +240,7 @@
         </javadoc>
     </target>
 
-    <target name="maven-install-jars" description="Install the jar files that Maven can't find for itself">
+    <target name="maven-install-jars" description="Install the jar files that Maven can't find for itself" depends="findAndroid">
         <exec executable="mvn">
             <arg line="install:install-file -DgroupId=com.google.android.maps -DartifactId=maps -Dversion=10_r2 -Dpackaging=jar -Dfile=${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar" />
         </exec>
@@ -251,7 +253,7 @@
     </target>
 
     <!-- used by travis-ci -->
-    <target name="prepare-travis-ci" description="Prepare for travis ci build">
+    <target name="prepare-travis-ci" description="Prepare for travis ci build" depends="findAndroid">
       <mkdir dir="tmp"/>
       <get src="http://dl.google.com/android/android-sdk_r20.0.3-linux.tgz" dest="tmp" skipexisting="true"/>
       <untar src="tmp/android-sdk_r20.0.3-linux.tgz" compression="gzip" dest="tmp/sdk"/>
