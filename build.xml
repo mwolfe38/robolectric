@@ -22,6 +22,7 @@
 
          -->
     <!-- this should match whatever is defined in Robolectic.DEFAULT_SDK_VERSION -->
+    <property environment="env"/>
     <property name="default.sdk.version" value="16"/>
 
     <property file="build.properties"/>
@@ -30,19 +31,40 @@
          This file is an integral part of the build system for your application and
          should be checked in in Version Control Systems. -->
     <property file="default.properties"/>
-
+	<property file="local.properties"/>
     <condition property="isWindows"> <os family="windows" /> </condition>
-
-    <target name="findAndroidWindows" if="isWindows">
+    <condition property="sdkDirSet">
+		<and>
+			<isset property="sdk.dir" />
+			<isset property="env.ANDROID_HOME" />
+		</and>
+    </condition>
+    <condition property="isWindowsAndSdkDirNotSet">
+		<and>
+			<istrue  value="${isWindows}" />
+			<isfalse value="${sdkDirSet}" />  
+		</and>
+    </condition> 
+    <condition property="isNotWindowsAndSdkDirNotSet">
+		<and>
+			<isfalse value="${isWindows}" />
+			<isfalse value="${sdkDirSet}" />
+		</and>
+    </condition>
+    <target name="findAndroidWindows" if="isWindowsAndSdkDirNotSet">
         <echo message="Finding the Android version in windows"/>
         <exec executable="./find-android.bat"/>
     </target>
-    <target name="findAndroidUnix" unless="isWindows">
+    <target name="findAndroidUnix" if="isNotWindowsAndSdkDirNotSet">
         <echo message="Finding the Android version in *nix"/>
         <exec executable="./find-android.sh"/>
     </target>
-    <property file="local.properties"/>
+    
+    <target name="findAndroid" unless="sdkDirSet" depends="findAndroidWindows, findAndroidUnix">
+		<fail message="Build failed because the sdk.dir was not. We generated one with this build script though so try your build again." />
+    </target>
 
+    
     <!-- Custom Android task to deal with the project target, and import the proper rules.
          This requires ant 1.6.0 or above. -->
     <path id="android.antlibs">
@@ -82,14 +104,13 @@
 
     <property name="base.package" value="com.xtremelabs.robolectric"/>
 
-    <property environment="env"/>
+    
     <condition property="build.number" value="${env.BUILD_NUMBER}" else="unknown">
         <isset property="env.BUILD_NUMBER"/>
     </condition>
-
     <target name="compile"
             description="compile module source"
-            depends="findAndroidUnix, findAndroidWindows">
+            depends="findAndroid">
         <mkdir dir="${out.main.absolute.dir}"/>
 
         <javac encoding="ascii" source="1.6" target="1.6" debug="true" extdirs=""
