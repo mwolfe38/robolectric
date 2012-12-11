@@ -20,8 +20,8 @@ public class ResourceExtractorTest {
 
     @Test
     public void shouldHandleStyleable() throws Exception {
-        assertThat(resourceExtractor.getLocalResourceId("id/textStyle"), equalTo(R.id.textStyle));
-        assertThat(resourceExtractor.getLocalResourceId("styleable/TitleBar_textStyle"), CoreMatchers.<Object>nullValue());
+        assertThat(resourceExtractor.getResourceId("id/textStyle"), equalTo(R.id.textStyle));
+        assertThat(resourceExtractor.getResourceId("styleable/TitleBar_textStyle"), CoreMatchers.<Object>nullValue());
     }
 
     @Test
@@ -31,6 +31,6 @@ public class ResourceExtractorTest {
     
     @Test
     public void shouldHandleNull() throws Exception {
-        assertThat(resourceExtractor.getLocalResourceId("@null"), equalTo(0));
+        assertThat(resourceExtractor.getResourceId("@null"), equalTo(0));
     }
 }

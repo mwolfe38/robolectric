@@ -22,7 +22,7 @@ public class StringArrayResourceLoader extends XpathResourceXmlLoader {
     }
 
     public String[] getArrayValue(int resourceId) {
-        String resourceName = resourceExtractor.getResourceName(resourceId, ResourceSection.ARRAY);
+        String resourceName = resourceExtractor.getResourceName(resourceId);
         return stringArrayValues.get(resourceName);
     }
 

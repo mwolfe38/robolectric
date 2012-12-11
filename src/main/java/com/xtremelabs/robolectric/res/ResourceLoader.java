@@ -4,6 +4,7 @@ import static com.xtremelabs.robolectric.Robolectric.shadowOf;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -77,6 +78,7 @@ public class ResourceLoader {
 	
     public ResourceLoader(int sdkVersion, Class<?> rClass, File resourceDir, File assetsDir,
             File[] libResourceDirs, File[] libAssetDirs, Class<?>[] libRClasses) throws Exception {
+
         this.sdkVersion = sdkVersion;
         this.assetsDir = assetsDir;
         this.rClass = rClass;
@@ -94,7 +96,7 @@ public class ResourceLoader {
         resourceExtractor = new ResourceExtractor();
         for (Class<?> libClass : libRClasses) {
             if (libClass != null) {
-                resourceExtractor.addLocalRClass(libClass);
+               // resourceExtractor.addLibraryRClass(libClass);
             }
         }
         resourceExtractor.addLocalRClass(rClass);

@@ -28,7 +28,9 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,7 +56,8 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
 
     private static RobolectricClassLoader getDefaultLoader() {
         if (defaultLoader == null) {
-            defaultLoader = new RobolectricClassLoader(ShadowWrangler.getInstance());
+            List<String> customClasses = new ArrayList<String>();
+            defaultLoader = new RobolectricClassLoader(ShadowWrangler.getInstance(), customClasses);
         }
         return defaultLoader;
     }

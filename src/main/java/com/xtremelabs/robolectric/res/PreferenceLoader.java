@@ -66,7 +66,7 @@ public class PreferenceLoader extends XmlLoader {
     }
  
 	public PreferenceScreen inflatePreferences(Context context, int resourceId) {
-		return inflatePreferences(context, resourceExtractor.getResourceName(resourceId, ResourceSection.XML));		
+		return inflatePreferences(context, resourceExtractor.getResourceName(resourceId));		
 	}
 	
 	public PreferenceScreen inflatePreferences(Context context, String key) {

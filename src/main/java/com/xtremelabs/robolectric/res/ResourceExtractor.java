@@ -2,80 +2,143 @@ package com.xtremelabs.robolectric.res;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ResourceExtractor {
+    public static enum ResourceType {
+        SYSTEM,
+        APPLICATION,
+        LIBRARY
+    };
     
-    private class ResourceSectionIdKey {
-        public final String section;
+    private class ResourceLibraryClassAndIdKey {
+        public final Class<?> rClass;
         public final Integer id;
-        public ResourceSectionIdKey(Integer id, String section) {
-            if (section == null || id == null) {
+       
+        
+        private ResourceLibraryClassAndIdKey(Class<?> rClass, Integer id) {
+            if (rClass == null || id == null) {
                 throw new RuntimeException("Null type or name not allowed for resource key's");
             }
-            this.section = section;
+            this.rClass = rClass;
             this.id = id;
         }
         @Override
         public boolean equals(Object o) {
             if (o == null) return false;
             if (o == this) return true;
-            ResourceSectionIdKey other = (ResourceSectionIdKey) o;
-            return section.equals(other.section) && id.equals(other.id);
+            ResourceLibraryClassAndIdKey other = (ResourceLibraryClassAndIdKey) o;
+            return id.equals(other.id) && rClass.equals(other.rClass);
         }
         @Override
         public int hashCode() {
-            return 31 * section.hashCode() + id;
+            return toString().hashCode();
         }
         @Override
         public String toString() {
-            return section + "/0x" + Integer.toHexString(id);
+            return rClass.getCanonicalName() + "/0x" + Integer.toHexString(id);
         }
     }
     
+    private class RClassAndType {
+        public final Class<?> rClass;
+        public final ResourceType type;
+        public RClassAndType(Class<?> resClass, ResourceType rType) {
+            rClass = resClass;
+            type = rType;
+        }
+    }
+    
+    private List<RClassAndType> pendingClassesToResolve = new ArrayList<RClassAndType>();
+    
     private Map<String, Integer> localResourceStringToId = new HashMap<String, Integer>();
     private Map<String, Integer> systemResourceStringToId = new HashMap<String, Integer>();
-    private Map<ResourceSectionIdKey, String> resourceSectionIdToName= new HashMap<ResourceSectionIdKey, String>();
+    private Map<Integer, String> resourceIdToName = new HashMap<Integer, String>();
+    private Map<ResourceLibraryClassAndIdKey, Integer> libResourceClassAndIdToApplicationId = new HashMap<ResourceLibraryClassAndIdKey, Integer>();
     
-
+    private boolean isApplicationClassResolved = false;
+    
     public void addLocalRClass(Class<?> rClass) throws Exception {
-        addRClass(rClass, false);
+        addRClass(rClass, ResourceType.APPLICATION);
     }
 
     public void addSystemRClass(Class<?> rClass) throws Exception {
-        addRClass(rClass, true);
+        addRClass(rClass, ResourceType.SYSTEM);
+    }
+    
+    public void addLibraryRClass(Class<?> rClass) throws Exception {
+        addRClass(rClass, ResourceType.LIBRARY);
     }
 
-    private void addRClass(Class<?> rClass, boolean isSystemRClass) throws Exception {
-        for (Class<?> innerClass : rClass.getClasses()) {
-            for (Field field : innerClass.getDeclaredFields()) {
-                if (field.getType().equals(Integer.TYPE) && Modifier.isStatic(field.getModifiers())) {
-                    String section = innerClass.getSimpleName();
-                    String name = section + "/" + field.getName();
-                    int value = field.getInt(null);
-                    if (isSystemRClass) {
-                        name = "android:" + name;
-                    }
-                    if (!section.equals("styleable")) {
-                        if (isSystemRClass) {
-                            systemResourceStringToId.put(name, value);
-                        } else {
-                            localResourceStringToId.put(name, value);
+    //must wait until the application class to be resolved before resolving library r classes
+    private void addRClass(Class<?> rClass, ResourceType resourceType) throws Exception {
+        RClassAndType rct = new RClassAndType(rClass, resourceType);
+        //application classes must resolve first
+        if (resourceType == ResourceType.APPLICATION) {
+            if (isApplicationClassResolved) {
+                throw new RuntimeException("Can't have multiple application R classes");
+            }
+            isApplicationClassResolved = true;
+            pendingClassesToResolve.add(0, rct);
+        } else {
+            pendingClassesToResolve.add(rct);
+        }
+        if (isApplicationClassResolved) {
+            addUnresolvedRClasses();
+        }
+    }
+
+    public void addUnresolvedRClasses() throws Exception {
+        while(!pendingClassesToResolve.isEmpty()) {
+            RClassAndType rct = pendingClassesToResolve.remove(0);
+            Class<?> rClass = rct.rClass;
+            System.out.println("Adding class " + rClass.getName());
+            ResourceType resourceType = rct.type;
+            for (Class<?> innerClass : rClass.getClasses()) {
+                for (Field field : innerClass.getDeclaredFields()) {
+                    if (field.getType().equals(Integer.TYPE) && Modifier.isStatic(field.getModifiers())) {
+                        String section = innerClass.getSimpleName();
+                        String name = section + "/" + field.getName();
+                        int value = field.getInt(null);
+                        if (resourceType == ResourceType.SYSTEM) {
+                            name = "android:" + name;
                         }
-                        //ensure that we don't have any key section/id->name collisions.
-                        //if this happens we simply can't test projects including library project resources
-                        ResourceSectionIdKey key = new ResourceSectionIdKey(value, section);
-                        if (resourceSectionIdToName.containsKey(key)) {
-                            throw new RuntimeException(value + " is already defined in the section " + section + " with name: " + resourceSectionIdToName.get(key) + " can't also call it: " + name);
+                        if (!section.equals("styleable")) {
+                            if (resourceType == ResourceType.SYSTEM) {
+                                systemResourceStringToId.put(name, value);
+                            } else if (resourceType == ResourceType.APPLICATION){
+                                localResourceStringToId.put(name, value);
+                            } else {
+                                //for library projects, map (library id,library class) -> application class id
+                                Integer appValue = localResourceStringToId.get(name);
+                                if (appValue == null) {
+                                    throw new RuntimeException(name + " not found in application R class but was in library R class. " +
+                                    		"Application R class should be a superset of included library projects");
+                                }
+                                ResourceLibraryClassAndIdKey rClassIdKey = new ResourceLibraryClassAndIdKey(rClass, value);
+                                libResourceClassAndIdToApplicationId.put(rClassIdKey, appValue);
+                                
+                            }
+                            //we don't store the mapping from id->name for library projects, instead we stored
+                            //lib id -> app id mapping above. We'll have to do a special lookup from library classes
+                            if (resourceType != ResourceType.LIBRARY) {
+                                //ensure that we don't have any key section/id->name collisions.
+                                //if this happens we simply can't test projects including library project resources
+                                if (resourceIdToName.containsKey(value)) {
+                                    throw new RuntimeException(value + " is already defined with name: " + resourceIdToName.get(value) + " can't also call it: " + name);
+                                }
+                                resourceIdToName.put(value,  name);
+                            }
+                            
                         }
-                        resourceSectionIdToName.put(new ResourceSectionIdKey(value, section), name);
                     }
                 }
             }
         }
     }
-
 
     
     public Integer getResourceId(String resourceName) {
@@ -87,8 +150,7 @@ public class ResourceExtractor {
     }
 
     public Integer getLocalResourceId(String value) {
-        boolean isSystem = false;
-        return getResourceId(value, isSystem);
+        return getResourceId(value, false);
     }
 
     public Integer getResourceId(String resourceName, boolean isSystemResource) {
@@ -114,28 +176,40 @@ public class ResourceExtractor {
         }
     }
 
-    public String getResourceName(int resourceId, String section) {
-        ResourceSectionIdKey key = new ResourceSectionIdKey(resourceId,  section);
-        return resourceSectionIdToName.get(key);
+    /**
+     * Gets the resource name associated to a given resourceId and an optional
+     * libraryRClass. Passing null for libraryRClass 
+     * @param resourceId - id of the resource to get the name for
+     * @param rClass - if you are doing the lookup from a library class, specify which R class
+     * you are doing the lookup from.
+     * @return
+     */
+    public String getResourceName(int resourceId, Class<?> libraryRClass) {
+        if (libraryRClass == null) {
+            return resourceIdToName.get(resourceId);
+        } else {
+            ResourceLibraryClassAndIdKey rlibKey = new ResourceLibraryClassAndIdKey(libraryRClass, resourceId);
+            Integer refId = libResourceClassAndIdToApplicationId.get(rlibKey);
+            if (refId != null) {
+                return resourceIdToName.get(refId);
+            }
+        }
+        return null;
     }
     
+//    private Class<?> getFirstCallingPackageOutsideRobolectric() {
+//         StackTraceElement[] stack = new Throwable().getStackTrace();
+//         int index = 2;
+//         boolean found = false;
+//         while (!found) {
+//             stack[index].getClass().
+//                     
+//                     index++;
+//         }
+//        
+//    }
     public String getResourceName(int resourceId) {
-        for (Field field : ResourceSection.class.getDeclaredFields()) {
-            if (field.getType().equals(String.class) && 
-                    Modifier.isStatic(field.getModifiers()) && 
-                    Modifier.isPublic(field.getModifiers())) {
-                String name=null;
-                try {
-                    name = getResourceName(resourceId, (String)field.get(null));
-                } catch (Exception e) {
-                   //not sure what to do here?
-                }
-                if (name != null) {
-                    return name;
-                }
-            }
-        } 
-        return null;
-       
+        return getResourceName(resourceId, null);
     }
+     
 }

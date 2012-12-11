@@ -10,7 +10,7 @@ public class StringResourceLoader extends XpathResourceXmlLoader implements Reso
     }
 
     public String getValue(int resourceId) {
-        String name = resourceExtractor.getResourceName(resourceId, ResourceSection.STRING);
+        String name = resourceExtractor.getResourceName(resourceId);
         return stringResolver.getValue(name);
     }
 
