@@ -14,35 +14,6 @@ public class ResourceExtractor {
         LIBRARY
     };
     
-    private class ResourceLibraryClassAndIdKey {
-        public final Class<?> rClass;
-        public final Integer id;
-       
-        
-        private ResourceLibraryClassAndIdKey(Class<?> rClass, Integer id) {
-            if (rClass == null || id == null) {
-                throw new RuntimeException("Null type or name not allowed for resource key's");
-            }
-            this.rClass = rClass;
-            this.id = id;
-        }
-        @Override
-        public boolean equals(Object o) {
-            if (o == null) return false;
-            if (o == this) return true;
-            ResourceLibraryClassAndIdKey other = (ResourceLibraryClassAndIdKey) o;
-            return id.equals(other.id) && rClass.equals(other.rClass);
-        }
-        @Override
-        public int hashCode() {
-            return toString().hashCode();
-        }
-        @Override
-        public String toString() {
-            return rClass.getCanonicalName() + "/0x" + Integer.toHexString(id);
-        }
-    }
-    
     private class RClassAndType {
         public final Class<?> rClass;
         public final ResourceType type;
@@ -57,8 +28,7 @@ public class ResourceExtractor {
     private Map<String, Integer> localResourceStringToId = new HashMap<String, Integer>();
     private Map<String, Integer> systemResourceStringToId = new HashMap<String, Integer>();
     private Map<Integer, String> resourceIdToName = new HashMap<Integer, String>();
-    private Map<ResourceLibraryClassAndIdKey, Integer> libResourceClassAndIdToApplicationId = new HashMap<ResourceLibraryClassAndIdKey, Integer>();
-    
+ 
     private boolean isApplicationClassResolved = false;
     
     public void addLocalRClass(Class<?> rClass) throws Exception {
@@ -70,7 +40,8 @@ public class ResourceExtractor {
     }
     
     public void addLibraryRClass(Class<?> rClass) throws Exception {
-        addRClass(rClass, ResourceType.LIBRARY);
+        //addRClass(rClass, ResourceType.LIBRARY);
+        //currently implementation doesn't do anything because library R class should be subset of application R class.
     }
 
     //must wait until the application class to be resolved before resolving library r classes
@@ -110,16 +81,6 @@ public class ResourceExtractor {
                                 systemResourceStringToId.put(name, value);
                             } else if (resourceType == ResourceType.APPLICATION){
                                 localResourceStringToId.put(name, value);
-                            } else {
-                                //for library projects, map (library id,library class) -> application class id
-                                Integer appValue = localResourceStringToId.get(name);
-                                if (appValue == null) {
-                                    throw new RuntimeException(name + " not found in application R class but was in library R class. " +
-                                    		"Application R class should be a superset of included library projects");
-                                }
-                                ResourceLibraryClassAndIdKey rClassIdKey = new ResourceLibraryClassAndIdKey(rClass, value);
-                                libResourceClassAndIdToApplicationId.put(rClassIdKey, appValue);
-                                
                             }
                             //we don't store the mapping from id->name for library projects, instead we stored
                             //lib id -> app id mapping above. We'll have to do a special lookup from library classes
@@ -174,41 +135,9 @@ public class ResourceExtractor {
             return localResourceStringToId.get(resourceName);
         }
     }
-
-    /**
-     * Gets the resource name associated to a given resourceId and an optional
-     * libraryRClass. Passing null for libraryRClass 
-     * @param resourceId - id of the resource to get the name for
-     * @param rClass - if you are doing the lookup from a library class, specify which R class
-     * you are doing the lookup from.
-     * @return
-     */
-    public String getResourceName(int resourceId, Class<?> libraryRClass) {
-        if (libraryRClass == null) {
-            return resourceIdToName.get(resourceId);
-        } else {
-            ResourceLibraryClassAndIdKey rlibKey = new ResourceLibraryClassAndIdKey(libraryRClass, resourceId);
-            Integer refId = libResourceClassAndIdToApplicationId.get(rlibKey);
-            if (refId != null) {
-                return resourceIdToName.get(refId);
-            }
-        }
-        return null;
-    }
     
-//    private Class<?> getFirstCallingPackageOutsideRobolectric() {
-//         StackTraceElement[] stack = new Throwable().getStackTrace();
-//         int index = 2;
-//         boolean found = false;
-//         while (!found) {
-//             stack[index].getClass().
-//                     
-//                     index++;
-//         }
-//        
-//    }
     public String getResourceName(int resourceId) {
-        return getResourceName(resourceId, null);
+        return resourceIdToName.get(resourceId);
     }
      
 }
