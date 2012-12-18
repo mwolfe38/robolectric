@@ -22,6 +22,7 @@
 
          -->
     <!-- this should match whatever is defined in Robolectic.DEFAULT_SDK_VERSION -->
+    <property environment="env"/>
     <property name="default.sdk.version" value="16"/>
 
     <property file="build.properties"/>
@@ -30,37 +31,60 @@
          This file is an integral part of the build system for your application and
          should be checked in in Version Control Systems. -->
     <property file="default.properties"/>
-
+	<property file="local.properties"/>
     <condition property="isWindows"> <os family="windows" /> </condition>
-
-    <target name="findAndroidWindows" if="isWindows">
+    <condition property="sdkDirSet">
+		<and>
+			<isset property="sdk.dir" />
+			<isset property="env.ANDROID_HOME" />
+		</and>
+    </condition>
+    <condition property="isWindowsAndSdkDirNotSet">
+		<and>
+			<istrue  value="${isWindows}" />
+			<isfalse value="${sdkDirSet}" />  
+		</and>
+    </condition> 
+    <condition property="isNotWindowsAndSdkDirNotSet">
+		<and>
+			<isfalse value="${isWindows}" />
+			<isfalse value="${sdkDirSet}" />
+		</and>
+    </condition>
+    <target name="findAndroidWindows" if="isWindowsAndSdkDirNotSet">
         <echo message="Finding the Android version in windows"/>
         <exec executable="./find-android.bat"/>
     </target>
-    <target name="findAndroidUnix" unless="isWindows">
+    <target name="findAndroidUnix" if="isNotWindowsAndSdkDirNotSet">
         <echo message="Finding the Android version in *nix"/>
         <exec executable="./find-android.sh"/>
     </target>
-    <property file="local.properties"/>
+    
+    <target name="findAndroid" depends="findAndroidWindows, findAndroidUnix">
+    	<loadproperties srcFile="local.properties" />
+    	<echo message="sdk.dir is ${sdk.dir}" />
+    	<path id="android.antlibs">
+       		<pathelement path="${sdk.dir}/tools/lib/anttasks.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/sdklib.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/androidprefs.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/apkbuilder.jar"/>
+        	<pathelement path="${sdk.dir}/tools/lib/jarutils.jar"/>
+    	</path>
 
+    	<path id="android.target.classpath">
+        	<pathelement path="${sdk.dir}/platforms/android-${default.sdk.version}/android.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon-google_apis-google_inc_-${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/add-ons/addon-google_apis-google-${default.sdk.version}/libs/maps.jar"/>
+        	<pathelement path="${sdk.dir}/extras/android/support/v4/android-support-v4.jar"/>
+        	<pathelement path="${sdk.dir}/android-compatibility/v4/android-support-v4.jar"/>
+    	</path>
+    </target>
+
+    
     <!-- Custom Android task to deal with the project target, and import the proper rules.
          This requires ant 1.6.0 or above. -->
-    <path id="android.antlibs">
-        <pathelement path="${sdk.dir}/tools/lib/anttasks.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/sdklib.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/androidprefs.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/apkbuilder.jar"/>
-        <pathelement path="${sdk.dir}/tools/lib/jarutils.jar"/>
-    </path>
-
-    <path id="android.target.classpath">
-        <pathelement path="${sdk.dir}/platforms/android-${default.sdk.version}/android.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon-google_apis-google_inc_-${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/add-ons/addon-google_apis-google-${default.sdk.version}/libs/maps.jar"/>
-        <pathelement path="${sdk.dir}/extras/android/support/v4/android-support-v4.jar"/>
-        <pathelement path="${sdk.dir}/android-compatibility/v4/android-support-v4.jar"/>
-    </path>
+    
 
     <property name="main.absolute.dir" location="${main.dir}"/>
     <property name="out.main.dir" value="${out.absolute.dir}/mainClasses"/>
@@ -82,14 +106,13 @@
 
     <property name="base.package" value="com.xtremelabs.robolectric"/>
 
-    <property environment="env"/>
+    
     <condition property="build.number" value="${env.BUILD_NUMBER}" else="unknown">
         <isset property="env.BUILD_NUMBER"/>
     </condition>
-
     <target name="compile"
             description="compile module source"
-            depends="findAndroidUnix, findAndroidWindows">
+            depends="findAndroid">
         <mkdir dir="${out.main.absolute.dir}"/>
 
         <javac encoding="ascii" source="1.6" target="1.6" debug="true" extdirs=""
@@ -217,7 +240,7 @@
         </javadoc>
     </target>
 
-    <target name="maven-install-jars" description="Install the jar files that Maven can't find for itself">
+    <target name="maven-install-jars" description="Install the jar files that Maven can't find for itself" depends="findAndroid">
         <exec executable="mvn">
             <arg line="install:install-file -DgroupId=com.google.android.maps -DartifactId=maps -Dversion=10_r2 -Dpackaging=jar -Dfile=${sdk.dir}/add-ons/addon_google_apis_google_inc_${default.sdk.version}/libs/maps.jar" />
         </exec>
@@ -230,7 +253,7 @@
     </target>
 
     <!-- used by travis-ci -->
-    <target name="prepare-travis-ci" description="Prepare for travis ci build">
+    <target name="prepare-travis-ci" description="Prepare for travis ci build" depends="findAndroid">
       <mkdir dir="tmp"/>
       <get src="http://dl.google.com/android/android-sdk_r20.0.3-linux.tgz" dest="tmp" skipexisting="true"/>
       <untar src="tmp/android-sdk_r20.0.3-linux.tgz" compression="gzip" dest="tmp/sdk"/>
