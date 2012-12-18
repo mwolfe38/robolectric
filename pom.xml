@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
+<!--
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
         <version>5</version>
     </parent>
+   --> 
+    <parent> 
+ 	<groupId>com.taser</groupId> 
+ 	<artifactId>taser-parent</artifactId> 
+ 	<version>1.0.0-SNAPSHOT</version> 
+    </parent> 
 
     <groupId>com.pivotallabs</groupId>
     <artifactId>robolectric</artifactId>
@@ -14,7 +20,14 @@
     <packaging>jar</packaging>
     <name>Robolectric</name>
     <description>An alternative Android testing framework.</description>
-    <url>http://pivotal.github.com/robolectric/</url>
+    <url>https://github.com/mwolfe38/robolectric</url>
+    
+    <scm> 
+        <url>https://github.com/mwolfe38/robolectric</url> 
+		<connection>scm:git:ssh://git@github.com:mwolfe38/robolectric.git</connection> 
+		<developerConnection>scm:git:git@github.com:mwolfe38/robolectric.git</developerConnection> 
+	</scm>
+		
 
     <dependencies>
         <dependency>
@@ -27,7 +40,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit-dep</artifactId>
-            <version>4.8.2</version>
+            <version>4.10</version>
             <scope>provided</scope>
         </dependency>
 
@@ -90,10 +103,10 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.android</groupId>
-            <artifactId>support-v4</artifactId>
-            <version>r6</version>
-        </dependency>
+		  <groupId>android.support</groupId>
+		  <artifactId>compatibility-v4</artifactId>
+		  <version>11</version>
+		</dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
@@ -236,11 +249,7 @@
         </profile>
     </profiles>
 
-    <scm>
-        <url>git@github.com:pivotal/robolectric.git</url>
-        <connection>scm:git:git://github.com/pivotal/robolectric.git</connection>
-        <developerConnection>scm:git:git@github.com:pivotal/robolectric.git</developerConnection>
-    </scm>
+
 
     <ciManagement>
         <system>Hudson</system>

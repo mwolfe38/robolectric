@@ -23,7 +23,6 @@ public class RobolectricConfig {
     private final File assetsDirectory;
     private final List<File> libraryProjectDirectories;
     private final File[] libraryResourceDirectories;
-    private final File[] libraryAssetDirectories;
     private final Class<?>[] libraryRClasses;
     
     private String rClassName;
@@ -69,11 +68,9 @@ public class RobolectricConfig {
         this.assetsDirectory = assetsDirectory;
         
         libraryProjectDirectories = findLibraryProjects(androidManifestFile.getParentFile());
-        libraryAssetDirectories = new File[libraryProjectDirectories.size()];
         libraryResourceDirectories = new File[libraryProjectDirectories.size()];
         libraryRClasses = new Class[libraryProjectDirectories.size()];
         for(int i=0; i<libraryProjectDirectories.size(); i++) {
-            libraryAssetDirectories[i] = new File(libraryProjectDirectories.get(i), "assets");
             libraryResourceDirectories[i] = new File(libraryProjectDirectories.get(i), "res");
             String libPackageName = getPackageNameFromManifest(new File(libraryProjectDirectories.get(i), "AndroidManifest.xml"));
             try {
@@ -336,10 +333,6 @@ public class RobolectricConfig {
     
     public File[] getLibraryResourceDirectories() {
         return libraryResourceDirectories;
-    }
-    
-    public File[] getLibraryAssetDirectories() {
-        return libraryAssetDirectories;
     }
     
     public Class<?>[] getLibraryRClasses() {

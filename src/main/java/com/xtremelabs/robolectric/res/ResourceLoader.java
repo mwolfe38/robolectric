@@ -73,11 +73,11 @@ public class ResourceLoader {
 	private final Set<Integer> ninePatchDrawableIds = new HashSet<Integer>();
 	
 	public ResourceLoader(int sdkVersion, Class<?> rClass, File resourceDir, File assetsDir) throws Exception {
-	    this(sdkVersion, rClass, resourceDir, assetsDir, null, null, null);
+	    this(sdkVersion, rClass, resourceDir, null, null, null);
 	}
 	
     public ResourceLoader(int sdkVersion, Class<?> rClass, File resourceDir, File assetsDir,
-            File[] libResourceDirs, File[] libAssetDirs, Class<?>[] libRClasses) throws Exception {
+            File[] libResourceDirs, Class<?>[] libRClasses) throws Exception {
 
         this.sdkVersion = sdkVersion;
         this.assetsDir = assetsDir;

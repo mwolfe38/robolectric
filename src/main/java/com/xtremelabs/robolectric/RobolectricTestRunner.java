@@ -605,7 +605,6 @@ public class RobolectricTestRunner extends BlockJUnit4ClassRunner implements Rob
                         robolectricConfig.getResourceDirectory(),
                         robolectricConfig.getAssetsDirectory(),
                         robolectricConfig.getLibraryResourceDirectories(),
-                        robolectricConfig.getLibraryAssetDirectories(),
                         robolectricConfig.getLibraryRClasses());
          resourceLoaderForRootAndDirectory.put(robolectricConfig, resourceLoader);
             } catch (Exception e) {

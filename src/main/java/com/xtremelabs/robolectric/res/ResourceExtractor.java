@@ -95,7 +95,6 @@ public class ResourceExtractor {
         while(!pendingClassesToResolve.isEmpty()) {
             RClassAndType rct = pendingClassesToResolve.remove(0);
             Class<?> rClass = rct.rClass;
-            System.out.println("Adding class " + rClass.getName());
             ResourceType resourceType = rct.type;
             for (Class<?> innerClass : rClass.getClasses()) {
                 for (Field field : innerClass.getDeclaredFields()) {
