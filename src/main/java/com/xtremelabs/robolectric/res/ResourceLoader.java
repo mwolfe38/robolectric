@@ -4,7 +4,6 @@ import static com.xtremelabs.robolectric.Robolectric.shadowOf;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.net.URL;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -49,7 +48,7 @@ public class ResourceLoader {
 	private File assetsDir;
 	private File[] libResourceDirs;
 	private File[] libAssetDirs;
-	
+	private Class<?>[] libRClasses;
 	private int sdkVersion;
 	private Class<?> rClass;
 
@@ -91,14 +90,9 @@ public class ResourceLoader {
         if (libRClasses == null) {
             libRClasses = new Class<?>[0];
         }
-        this.libAssetDirs = libAssetDirs;
+        this.libRClasses = libRClasses;
         this.libResourceDirs = libResourceDirs;
         resourceExtractor = new ResourceExtractor();
-        for (Class<?> libClass : libRClasses) {
-            if (libClass != null) {
-               // resourceExtractor.addLibraryRClass(libClass);
-            }
-        }
         resourceExtractor.addLocalRClass(rClass);
         resourceExtractor.addSystemRClass(R.class);
         
@@ -524,10 +518,9 @@ public class ResourceLoader {
 		return getInnerRClassDrawable( resourceId, "$color", ColorDrawable.class );
 	}
 
-	@SuppressWarnings("rawtypes")
-	private Drawable getInnerRClassDrawable( int drawableResourceId, String suffix, Class returnClass ) {
+	private Drawable getInnerRClassDrawable( int drawableResourceId, String suffix, Class<?> returnClass ) {
 		ShadowContextWrapper shadowApp = Robolectric.shadowOf( Robolectric.application );
-		Class rClass = shadowApp.getResourceLoader().getLocalRClass();
+		Class<?> rClass = shadowApp.getResourceLoader().getLocalRClass();
 
 		// Check to make sure there is actually an R Class, if not
 		// return just a BitmapDrawable
@@ -536,7 +529,7 @@ public class ResourceLoader {
 		}
 
 		// Load the Inner Class for interrogation
-		Class animClass = null;
+		Class<?> animClass = null;
 		try {
 			animClass = Class.forName( rClass.getCanonicalName() + suffix );
 		} catch ( ClassNotFoundException e ) {
@@ -608,12 +601,11 @@ public class ResourceLoader {
 		return assetsDir;
 	}
 
-	@SuppressWarnings("rawtypes")
-	public Class getLocalRClass() {
+	public Class<?> getLocalRClass() {
 		return rClass;
 	}
 
-	public void setLocalRClass( Class clazz ) {
+	public void setLocalRClass( Class<?> clazz ) {
 		rClass = clazz;
 	}
 
